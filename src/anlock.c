@@ -7,17 +7,7 @@ void anlock_initialize(anlock_t lock) {
 }
 
 void anlock_lock(anlock_t lock) {
-  volatile anlock_t ptr = lock;
-  uint64_t oldValue = __sync_fetch_and_add(ptr, 1);
-  uint32_t lower = (uint32_t)(oldValue & 0xffffffffL);
-  if (!lower) return; // we have seized the lock first!
-  
-  uint32_t upper = (uint32_t)(oldValue >> 32L);
-  uint32_t waitUntil = (uint32_t)(upper + lower);
-  while (1) {
-    uint64_t nowUpper = (*lock) >> 32L;
-    if (nowUpper == (uint64_t)waitUntil) return;
-  }
+  anlock_lock_waiting(lock, (void *)0, (void *)0);
 }
 
 void anlock_lock_waiting(anlock_t lock, void * data, void (*fn)(void * d)) {
@@ -31,7 +21,7 @@ void anlock_lock_waiting(anlock_t lock, void * data, void (*fn)(void * d)) {
   while (1) {
     uint64_t nowUpper = read_value_atomically(lock) >> 32L;
     if (nowUpper == (uint64_t)waitUntil) return;
-    fn(data);
+    if (fn) fn(data);
   }
 }
 
