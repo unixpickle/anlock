@@ -30,6 +30,10 @@ void * myMethod(void * ptr) {
   printf("I waited for %d useconds\n", (int)number);
   sleep(1);
   if (!--threadCount) {
+    // make sure we can instantly seize and release the lock
+    anlock_unlock(lock);
+    anlock_lock(lock);
+    anlock_unlock(lock);
     exit(0);
   }
   anlock_unlock(lock);
