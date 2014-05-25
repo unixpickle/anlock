@@ -1,4 +1,5 @@
 #include "anlock.h"
+#include <assert.h>
 
 static uint64_t read_value_atomically(uint64_t * ptr);
 
@@ -11,8 +12,8 @@ void anlock_lock(anlock_t lock) {
 }
 
 void anlock_lock_waiting(anlock_t lock, void * data, void (*fn)(void * d)) {
-  volatile anlock_t ptr = lock;
-  uint64_t oldValue = __sync_fetch_and_add(ptr, 1);
+  assert(!((uintptr_t)lock & 7));
+  uint64_t oldValue = __sync_fetch_and_add(lock, 1);
   uint32_t lower = (uint32_t)(oldValue & 0xffffffffL);
   if (!lower) return; // we have seized the lock first!
   
@@ -26,15 +27,10 @@ void anlock_lock_waiting(anlock_t lock, void * data, void (*fn)(void * d)) {
 }
 
 void anlock_unlock(anlock_t lock) {
-  // use Intel's `lock` directive here to ensure that the unlock
-  // operation is atomic.
-  __asm__ __volatile__ ("movq $0xffffffff, %%rax\n"
-                        "lock addq %%rax, (%%rcx)"
-                        : // no output
-                        : "c"(lock)
-                        : "rax", "memory");
+  __sync_add_and_fetch(lock, 0xffffffff);
 }
 
 static uint64_t read_value_atomically(uint64_t * ptr) {
+  // TODO: on intel, this will automatically be atomic
   return __sync_fetch_and_add(ptr, 0);
 }
