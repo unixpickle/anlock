@@ -11,7 +11,9 @@ static int threadCount = 10;
 void * myMethod(void * number);
 void myWaitMethod(void * ptr);
 
-int main(int argc, const char * argv[]) {
+int main(int argc, const char ** argv) {
+  (void)argc;
+  (void)argv;
   anlock_initialize(lock);
   threadCount = 10;
   for (uint32_t usec = 0; usec < 10; usec++) {
