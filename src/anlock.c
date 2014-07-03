@@ -23,6 +23,10 @@ void anlock_lock_waiting(anlock_t lock, void * data, void (*fn)(void * d)) {
     uint64_t nowUpper = read_value_atomically(lock) >> 32L;
     if (nowUpper == (uint64_t)waitUntil) return;
     if (fn) fn(data);
+#if defined(__X86_64__) || defined(__amd64)
+    // clear the pipeline to increase lock performance
+    __asm__ __volatile__("pause" : : : "memory");
+#endif
   }
 }
 
